@@ -42,6 +42,7 @@ export class ReviewsController {
 
   @Get('report/:bookId')
   getReportByBookId(@Param('bookId', ParseIntPipe) bookId: number) {
-    return this.reviewsService.getReportByBookId(bookId);
+    // return this.reviewsService.getReportByBookId(bookId);
+    return this.reviewsService.getReportByBookIdNPlusOne(bookId);
   }
 }
