@@ -66,8 +66,49 @@ export class ReviewsService {
     });
   }
 
+  // 🔴 1. แบบที่มีปัญหา N+1 Query (สำหรับพรีเซนต์เปรียบเทียบบน NestJS Observe)
+  async getReportByBookIdNPlusOne(bookId: number) {
+    // Query ที่ 1: ดึงรีวิวทั้งหมด 500 รายการของหนังสือเล่มนี้
+    const reviews = await this.prisma.review.findMany({
+      where: { bookId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (reviews.length === 0) {
+      throw new NotFoundException(`ไม่พบข้อมูลรีวิวสำหรับ Book ID: ${bookId}`);
+    }
+
+    // 💥 เกิด N Queries: วน Loop 500 รอบเพื่อยิง DB ดึงข้อมูล User ทีละคนในลูป!
+    const reviewsWithUser = [];
+    let totalStars = 0;
+
+    for (const review of reviews) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: review.userId },
+      });
+
+      totalStars += review.rating;
+      reviewsWithUser.push({
+        id: review.id,
+        comment: review.comment,
+        rating: review.rating,
+        reviewerName: user?.name,
+        createdAt: review.createdAt,
+      });
+    }
+
+    return {
+      bookId,
+      totalReviews: reviews.length,
+      totalStars,
+      averageRating: Number((totalStars / reviews.length).toFixed(2)),
+      reviews: reviewsWithUser,
+    };
+  }
+
+  // 🟢 2. แบบไม่มีปัญหา N+1 Query (Optimized)
   async getReportByBookId(bookId: number) {
-    // 1. คำนวณดาวทั้งหมด และค่าเฉลี่ยด้วย Prisma Aggregate
+    // Query ที่ 1: สรุปผลดาวรวมและค่าเฉลี่ยด้วย Prisma Aggregate
     const stats = await this.prisma.review.aggregate({
       where: { bookId },
       _sum: { rating: true },
@@ -76,17 +117,13 @@ export class ReviewsService {
     });
 
     if (stats._count.id === 0) {
-      throw new NotFoundException(`ไม่พบข้อมูลรีวิวสำหรับหนังสือ Book ID: ${bookId}`);
+      throw new NotFoundException(`ไม่พบข้อมูลรีวิวสำหรับ Book ID: ${bookId}`);
     }
 
-    // 2. ดึงรายการเนื้อหา Review ทั้งหมดของหนังสือเล่มนี้
+    // Query ที่ 2: ดึงรีวิวพร้อม JOIN ข้อมูล User ด้วย `include` ภายใน Query เดียว
     const reviews = await this.prisma.review.findMany({
       where: { bookId },
-      select: {
-        id: true,
-        comment: true,
-        rating: true,
-        createdAt: true,
+      include: {
         user: {
           select: { name: true },
         },
@@ -94,12 +131,11 @@ export class ReviewsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // 3. จัดรูปแบบข้อมูลตอบกลับ
     return {
       bookId,
       totalReviews: stats._count.id,
-      totalStars: stats._sum.rating || 0, // ผลรวมดาวทั้งหมด
-      averageRating: Number((stats._avg.rating || 0).toFixed(2)), // ค่าเฉลี่ยดาว (ทศนิยม 2 ตำแหน่ง)
+      totalStars: stats._sum.rating || 0,
+      averageRating: Number((stats._avg.rating || 0).toFixed(2)),
       reviews: reviews.map((r) => ({
         id: r.id,
         comment: r.comment,
