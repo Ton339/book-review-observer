@@ -51,8 +51,8 @@ export class ReviewsController {
 
   @Get('report/:bookId')
   getReportByBookId(@Param('bookId', ParseIntPipe) bookId: number) {
-    // return this.reviewsService.getReportByBookIdOptimized(bookId);
-    return this.reviewsService.getReportByBookIdNPlusOne(bookId);
+    return this.reviewsService.getReportByBookIdOptimized(bookId);
+    // return this.reviewsService.getReportByBookIdNPlusOne(bookId);
   }
 
   // 📍 Endpoint ทดสอบ Debugging: GET /reviews/report/debug/999

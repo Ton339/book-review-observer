@@ -1,15 +1,23 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger, // 💡 เพิ่มการ import Logger
+  InternalServerErrorException,
+  NotFoundException, // 💡 เพิ่มการ import InternalServerErrorException
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { UsersService } from '../users/users.service.js';
 import { CreateReviewDto } from './dto/create-review.dto.js';
 import { UpdateReviewDto } from './dto/update-review.dto.js';
-import { UsersService } from '../users/users.service.js';
 
 @Injectable()
 export class ReviewsService {
+  // 💡 ประกาศพร็อพเพอร์ตี้ logger ภายในคลาส
+  private readonly logger = new Logger(ReviewsService.name);
+
   constructor(
     private prisma: PrismaService,
-    private usersService: UsersService, // 💡 Inject UsersService เข้ามา
-  ) { }
+    private usersService: UsersService,
+  ) {}
 
   // 1. Create - บันทึกรีวิวลง Database
   async create(dto: CreateReviewDto) {
@@ -96,25 +104,25 @@ export class ReviewsService {
     this.logger.log(`Starting generation of report for bookId: ${bookId}`);
 
     try {
-      // 🧪 จำลองสถานการณ์: หาก bookId = 999 ให้เกิด Database Query Failure
       if (bookId === 999) {
-        throw new Error('QueryTimeoutException: Database query timed out while fetching aggregates for bookId 999');
+        throw new Error(
+          'QueryTimeoutException: Database query timed out while fetching aggregates for bookId 999',
+        );
       }
 
       return await this.prisma.review.findMany({
         where: { bookId },
       });
     } catch (error: any) {
-      // 🪵 LOGS: พิมพ์ Log ระดับ ERROR พร้อม Stack Trace
-      // NestJS Observe จะดักจับ Log นี้ไปผูกเข้ากับ Trace ID ปัจจุบันให้อัตโนมัติ (Auto-correlation)
+      // 🪵 พิมพ์ Log ตามปกติ - Observe SDK จะผูก Log นี้เข้ากับ Trace ปัจจุบันและ Forward ขึ้น Dashboard
       this.logger.error(
         `Failed to generate report for bookId: ${bookId} - Reason: ${error.message}`,
         error.stack,
       );
 
-      // 💥 TRACES: เมื่อโยน Exception ออกไป Observe จะทำเครื่องหมาย Span นั้นเป็น Status: ERROR (แถบสีแดง)
       throw new InternalServerErrorException({
-        message: 'Unable to process review report due to internal database failure.',
+        message:
+          'Unable to process review report due to internal database failure.',
         bookId,
       });
     }
