@@ -1,6 +1,6 @@
 # Review Service (Microservice)
 
-ระบบบริหารจัดการรีวิวหนังสือ (**Review Service**) พัฒนาด้วย **NestJS** และ **Prisma (SQLite)** รองรับ **Distributed Tracing & APM ผ่าน NestJS Observe** โดยออกแบบมาเพื่อสาธิตและเปรียบเทียบประสิทธิภาพปัญหา **N+1 Query**
+ระบบบริหารจัดการรีวิวหนังสือ (**Review Service**) พัฒนาด้วย **NestJS** และ **Prisma (PostgreSQL)** รองรับ **Distributed Tracing & APM ผ่าน NestJS Observe** โดยออกแบบมาเพื่อสาธิตและเปรียบเทียบประสิทธิภาพปัญหา **N+1 Query**
 
 ---
 
@@ -16,7 +16,7 @@
 
 * **Framework:** NestJS (v11+)
 * **ORM:** Prisma ORM (v6+)
-* **Database:** SQLite
+* **Database:** PostgreSQL
 * **Observability:** `@nestjs/observe` (Auto-instrumentation)
 * **Validation:** `class-validator`, `class-transformer`
 
@@ -32,6 +32,16 @@ npm install
 ```
 
 ### 2. ตั้งค่า Database & Prisma
+
+เตรียม PostgreSQL และสร้างฐานข้อมูล `book_reviews` จากนั้นคัดลอก `.env.example` เป็น `.env` และแก้ค่า `DATABASE_URL` ให้ตรงกับการตั้งค่าฐานข้อมูลของคุณ:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/book_reviews?schema=public"
+```
+
+แทนที่ `USER`, `PASSWORD`, host, port และชื่อฐานข้อมูลให้ตรงกับ PostgreSQL ของคุณ โดย URL-encode อักขระพิเศษใน username หรือ password ก่อนนำมาใส่ใน connection string
+
+จากนั้นสร้างตารางและ Prisma Client:
 
 ```bash
 npx prisma db push

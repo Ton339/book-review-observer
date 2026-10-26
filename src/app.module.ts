@@ -8,16 +8,19 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
   imports: [
-    // Distributed tracing, auto-correlated logs, request/job metrics, error
-    // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com
     ObserveModule.forRoot({
       appKey: process.env.OBSERVE_APP_KEY,
       appSecret: process.env.OBSERVE_APP_SECRET,
       serviceId: 'book-review-observer',
+      // 💡 เปิดการติดตาม Database Queries & Outbound HTTP แบบ Auto (ตามเอกสาร Observe SDK)
+      outgoing: {
+        database: true,
+        http: true,
+      },
     }),
     ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
