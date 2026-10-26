@@ -1,15 +1,21 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  constructor() {
+    const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './dev.db';
+    // 💡 ส่งเป็น Object { url: dbPath }
+    const adapter = new PrismaBetterSqlite3({ url: dbPath });
+    super({ adapter });
+  }
+
   async onModuleInit() {
-    // ทำการเชื่อมต่อฐานข้อมูลเมื่อโมดูลเริ่มต้น
     await this.$connect();
   }
 
   async onModuleDestroy() {
-    // ตัดการเชื่อมต่อฐานข้อมูลเมื่อแอปปิดตัวลง
     await this.$disconnect();
   }
 }
