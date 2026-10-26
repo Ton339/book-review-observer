@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ReviewsService } from './reviews.service.js';
 import { CreateReviewDto } from './dto/create-review.dto.js';
 import { UpdateReviewDto } from './dto/update-review.dto.js';
@@ -42,7 +51,13 @@ export class ReviewsController {
 
   @Get('report/:bookId')
   getReportByBookId(@Param('bookId', ParseIntPipe) bookId: number) {
-    // return this.reviewsService.getReportByBookId(bookId);
-    return this.reviewsService.getReportByBookIdNPlusOne(bookId);
+    return this.reviewsService.getReportByBookIdOptimized(bookId);
+    // return this.reviewsService.getReportByBookIdNPlusOne(bookId);
+  }
+
+  // 📍 Endpoint ทดสอบ Debugging: GET /reviews/report/debug/999
+  @Get('report/debug/:bookId')
+  async getReportDebug(@Param('bookId', ParseIntPipe) bookId: number) {
+    return this.reviewsService.getReportWithDebugScenario(bookId);
   }
 }
